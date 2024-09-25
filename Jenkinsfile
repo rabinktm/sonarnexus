@@ -31,12 +31,13 @@ pipeline {
         }
 
         stage('Sonar Analysis') {
+            
             steps {
-                withSonarQubeEnv('sonar6.1') {
+                withSonarQubeEnv('sonar') {
                     sh '''${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=java-tomcat-sample \
                         -Dsonar.projectName=java-tomcat-sample \
                         -Dsonar.projectVersion=4.0 \
-                        -Dsonar.sources=jenkins/java-tomcat-sample/src/ \
+                        -Dsonar.sources=src/ \
                         -Dsonar.junit.reportsPath=target/surefire-reports/ \
                         -Dsonar.jacoco.reportsPath=target/jacoco.exec \
                         -Dsonar.java.checkstyle.reportPaths=target/checkstyle-result.xml'''
@@ -56,7 +57,7 @@ stage("UploadArtifact") {
                     artifacts: [
                         [artifactId: 'java-tomcat-sample',
                          classifier: '',
-                         file: 'jenkins/java-tomcat-sample/target/java-tomcat-maven-example.war',
+                         file: 'target/java-tomcat-maven-example.war',
                          type: 'war']
                     ]
                 )
