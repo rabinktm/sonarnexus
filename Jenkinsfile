@@ -24,18 +24,6 @@ pipeline {
                 sh 'docker build -t ${DOCKER_HUB_REPO}:${BUILD_NUMBER} .'
             }
         }
-        stage('Login to Docker Hub') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: "${DOCKER_CREDENTIALS_ID}", passwordVariable: 'DOCKER_HUB_PASSWORD', usernameVariable: 'DOCKER_HUB_USERNAME')]) {
-                    sh 'echo $DOCKER_HUB_PASSWORD | docker login -u $DOCKER_HUB_USERNAME --password-stdin'
-                }
-            }
-        }
-
-        
-
-        
-
         stage('Sonar Analysis') {
             
             steps {
@@ -50,7 +38,7 @@ pipeline {
                 }
             }
         }
-stage("UploadArtifact") {
+        stage("UploadArtifact") {
             steps {
                 nexusArtifactUploader(
                     nexusVersion: 'nexus3',
@@ -69,6 +57,13 @@ stage("UploadArtifact") {
                 )
             }
         }
+        stage('Login to Docker Hub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: "${DOCKER_CREDENTIALS_ID}", passwordVariable: 'DOCKER_HUB_PASSWORD', usernameVariable: 'DOCKER_HUB_USERNAME')]) {
+                    sh 'echo $DOCKER_HUB_PASSWORD | docker login -u $DOCKER_HUB_USERNAME --password-stdin'
+                }
+            }
+        } 
         stage('Push Docker Image') {
             steps {
                 
@@ -84,8 +79,7 @@ stage("UploadArtifact") {
         stage('Deploy to Staging') {
             agent {
                 label 'ubuntu-slave'
-            
-            }
+                  }
             steps{
                 echo "Running app on staging env"
                  sh '''
@@ -94,7 +88,6 @@ stage("UploadArtifact") {
                 docker run -itd --name tomcatInstanceStaging -p 8082:8080 "${DOCKER_HUB_REPO}":$BUILD_NUMBER
                 '''
             }
-
         }
     }
     
@@ -106,7 +99,7 @@ stage("UploadArtifact") {
         }
         success {
             mail to: 'domain.nova@gmail.com',
-            subject: 'BUILD SUCCESS NOTIFICATION',
+            subject: 'Build success notification',
             body: """Hello!,
 
 Build #$BUILD_NUMBER was successful. Please review it at:
@@ -116,7 +109,7 @@ DevOps Team"""
         }
         failure {
             mail to: 'domain.nova@gmail.com',
-            subject: 'BUILD FAILED NOTIFICATION',
+            subject: 'Build failed notification',
             body: """Hello!,
 
 Build #$BUILD_NUMBER failed. Please review it at:
