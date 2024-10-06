@@ -3,6 +3,8 @@ pipeline {
         label 'slave-node'
     }
     environment {
+        DOCKER_HUB_REPO = "rabinktm/newrepo"
+        DOCKER_CREDENTIALS_ID = "docker_crediantials"
         scannerHome = tool 'sonar6.1'
     }
     stages {
@@ -17,18 +19,22 @@ pipeline {
                 }
             }
         }
-
-        stage('UNIT TEST') {
+        stage('Build Docker Image') {
             steps {
-                sh 'mvn -f pom.xml test'
+                sh 'docker build -t ${DOCKER_HUB_REPO}:${BUILD_NUMBER} .'
+            }
+        }
+        stage('Login to Docker Hub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: "${DOCKER_CREDENTIALS_ID}", passwordVariable: 'DOCKER_HUB_PASSWORD', usernameVariable: 'DOCKER_HUB_USERNAME')]) {
+                    sh 'echo $DOCKER_HUB_PASSWORD | docker login -u $DOCKER_HUB_USERNAME --password-stdin'
+                }
             }
         }
 
-        stage('Checkstyle Analysis') {
-            steps {
-                sh 'mvn -f pom.xml checkstyle:checkstyle'
-            }
-        }
+        
+
+        
 
         stage('Sonar Analysis') {
             
@@ -62,6 +68,33 @@ stage("UploadArtifact") {
                     ]
                 )
             }
+        }
+        stage('Push Docker Image') {
+            steps {
+                
+                copyArtifacts filter: '**/*.war', fingerprintArtifacts: true, projectName: env.JOB_NAME, selector: specific(env.BUILD_NUMBER)
+                echo "Building docker image"
+                    sh '''
+                    original_pwd=$(pwd -P)
+                    docker push "${DOCKER_HUB_REPO}:${BUILD_NUMBER}"
+                    docker rmi "${DOCKER_HUB_REPO}:${BUILD_NUMBER}"
+                    '''
+                }
+            }
+        stage('Deploy to Staging') {
+            agent {
+                label 'ubuntu-slave'
+            
+            }
+            steps{
+                echo "Running app on staging env"
+                 sh '''
+                docker stop tomcatInstanceStaging || true
+                docker rm tomcatInstanceStaging || true
+                docker run -itd --name tomcatInstanceStaging -p 8082:8080 "${DOCKER_HUB_REPO}":$BUILD_NUMBER
+                '''
+            }
+
         }
     }
     
