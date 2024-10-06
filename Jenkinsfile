@@ -4,7 +4,7 @@ pipeline {
     }
     environment {
         DOCKER_HUB_REPO = "rabinktm/newrepo"
-        DOCKER_CREDENTIALS_ID = "docker_crediantials"
+        DOCKER_CREDENTIALS_ID = "docker_credentials"
         scannerHome = tool 'sonar6.1'
     }
     stages {
