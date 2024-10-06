@@ -19,11 +19,6 @@ pipeline {
                 }
             }
         }
-        stage('Build Docker Image') {
-            steps {
-                sh 'docker build -t ${DOCKER_HUB_REPO}:${BUILD_NUMBER} .'
-            }
-        }
         stage('Sonar Analysis') {
             
             steps {
@@ -36,6 +31,11 @@ pipeline {
                         -Dsonar.jacoco.reportsPath=target/jacoco.exec \
                         -Dsonar.java.checkstyle.reportPaths=target/checkstyle-result.xml'''
                 }
+            }
+        }
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t ${DOCKER_HUB_REPO}:${BUILD_NUMBER} .'
             }
         }
         stage("UploadArtifact") {
